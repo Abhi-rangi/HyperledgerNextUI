@@ -7,10 +7,10 @@ import Link from "next/link";
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
-    org: "",
+    org: "org1",
     enrollmentID: "",
-    affiliation: "",
-    role: "",
+    affiliation: "org1.department1",
+    role: "client",
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -27,6 +27,7 @@ const RegisterForm = () => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
+    console.log(formData);
     try {
       const response = await fetch("http://localhost:3001/registerUser", {
         method: "POST",
