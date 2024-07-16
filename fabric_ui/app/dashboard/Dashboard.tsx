@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Container, Row, Col, Card, Tabs, Tab, Button } from "react-bootstrap";
 import CreatePatient from "./CreatePatient";
 import SearchPatient from "./SearchPatient";
+import AppendData from "./AppendData";
+import ShowAllPatients from "./ShowAllPatients";
 
 const Dashboard = () => {
   const [enrollmentID, setEnrollmentID] = useState<string | null>(null);
@@ -49,6 +51,12 @@ const Dashboard = () => {
             </Tab>
             <Tab eventKey="searchPatient" title="Search Patient">
               <SearchPatient />
+            </Tab>
+            <Tab eventKey="appendData" title="Append Data">
+              <AppendData />
+            </Tab>
+            <Tab eventKey="showAllPatients" title="Show All Patients">
+              <ShowAllPatients />
             </Tab>
           </Tabs>
         </Card.Body>

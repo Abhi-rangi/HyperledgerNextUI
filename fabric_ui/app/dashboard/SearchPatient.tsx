@@ -9,6 +9,7 @@ import {
   Form,
   Button,
   Alert,
+  Table,
 } from "react-bootstrap";
 import Cookies from "js-cookie";
 
@@ -56,6 +57,73 @@ const SearchPatient = () => {
     }
   };
 
+  const renderPatientData = (data: any) => {
+    return (
+      <Table striped bordered hover className="mt-4">
+        <tbody>
+          <tr>
+            <td>ID</td>
+            <td>{data.id}</td>
+          </tr>
+          <tr>
+            <td>Name</td>
+            <td>
+              {data.name?.[0]?.family}, {data.name?.[0]?.given?.join(" ")}
+            </td>
+          </tr>
+          <tr>
+            <td>Gender</td>
+            <td>{data.gender}</td>
+          </tr>
+          <tr>
+            <td>Birth Date</td>
+            <td>{data.birthDate}</td>
+          </tr>
+          <tr>
+            <td>Address</td>
+            <td>
+              {data.address?.map((addr: any, index: number) => (
+                <div key={index}>
+                  {addr.line?.join(", ")}, {addr.city}, {addr.state},{" "}
+                  {addr.postalCode}, {addr.country}
+                </div>
+              ))}
+            </td>
+          </tr>
+          <tr>
+            <td>Identifier</td>
+            <td>{data.identifier?.[0]?.value}</td>
+          </tr>
+          <tr>
+            <td>Observations</td>
+            <td>
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Unit</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.observations?.map((obs: any, index: number) => (
+                    <tr key={index}>
+                      <td>{obs.type}</td>
+                      <td>{obs.value}</td>
+                      <td>{obs.unit}</td>
+                      <td>{new Date(obs.timestamp).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </td>
+          </tr>
+        </tbody>
+      </Table>
+    );
+  };
+
   return (
     <Container fluid className="mt-5">
       <Card className="text-black m-5" style={{ borderRadius: "25px" }}>
@@ -72,7 +140,6 @@ const SearchPatient = () => {
                     placeholder="Enter patient ID"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    // Inline style for width
                   />
                 </Form.Group>
 
@@ -85,11 +152,7 @@ const SearchPatient = () => {
                   Search
                 </Button>
               </Form>
-              {jsonData && (
-                <pre style={{ textAlign: "left", width: "100%" }}>
-                  {JSON.stringify(jsonData, null, 2)}
-                </pre>
-              )}
+              {jsonData && renderPatientData(jsonData)}
             </Col>
           </Row>
         </Card.Body>

@@ -1,6 +1,6 @@
 "use client"; // This directive is necessary for using client-side code
 
-import React, { useState } from "react";
+import React, { useState, ChangeEvent, FormEvent } from "react";
 import {
   Container,
   Row,
@@ -12,8 +12,62 @@ import {
 } from "react-bootstrap";
 import Cookies from "js-cookie";
 
+type Coding = {
+  system: string;
+  code: string;
+  display: string;
+};
+
+type IdentifierType = {
+  coding: Coding[];
+  text: string;
+};
+
+type Period = {
+  start: string;
+};
+
+type Assigner = {
+  display: string;
+};
+
+type Identifier = {
+  use: string;
+  type: IdentifierType;
+  system: string;
+  value: string;
+  period: Period;
+  assigner: Assigner;
+};
+
+type Name = {
+  use: string;
+  family: string;
+  given: string[];
+};
+
+type Address = {
+  use: string;
+  line: string[];
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+};
+
+type PatientData = {
+  resourceType: string;
+  id: string;
+  identifier: Identifier[];
+  active: boolean;
+  name: Name[];
+  gender: string;
+  birthDate: string;
+  address: Address[];
+};
+
 const CreatePatient = () => {
-  const [patientData, setPatientData] = useState({
+  const [patientData, setPatientData] = useState<PatientData>({
     resourceType: "Patient",
     id: "",
     identifier: [
@@ -31,7 +85,7 @@ const CreatePatient = () => {
         },
         system: "http://hospital.smarthealthit.org",
         value: "",
-        period: { start: "2022-01-01" },
+        period: { start: "" },
         assigner: { display: "Smart Hospital" },
       },
     ],
@@ -60,34 +114,72 @@ const CreatePatient = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setPatientData((prevData) => {
-      // Handle nested properties
-      if (name.startsWith("identifier.")) {
+
+    const updatePatientData = (
+      data: PatientData,
+      keys: string[],
+      value: string
+    ): PatientData => {
+      if (keys.length === 1) {
         return {
-          ...prevData,
-          identifier: prevData.identifier.map((ident, index) =>
-            index === 0 ? { ...ident, value } : ident
-          ),
+          ...data,
+          [keys[0]]: value,
         };
+      } else if (keys.length === 2) {
+        const key = keys[0] as keyof PatientData;
+        const subKey = keys[1];
+        if (Array.isArray(data[key])) {
+          const index = parseInt(subKey, 10);
+          return {
+            ...data,
+            [key]: data[key].map((item, idx) => (idx === index ? value : item)),
+          };
+        } else {
+          return {
+            ...data,
+            [key]: {
+              ...data[key],
+              [subKey]: value,
+            },
+          };
+        }
+      } else if (keys.length === 3) {
+        const key = keys[0] as keyof PatientData;
+        const index = parseInt(keys[1], 10);
+        const subKey = keys[2];
+        if (Array.isArray(data[key])) {
+          return {
+            ...data,
+            [key]: data[key].map((item, idx) =>
+              idx === index ? { ...item, [subKey]: value } : item
+            ),
+          };
+        } else {
+          return {
+            ...data,
+            [key]: {
+              ...data[key],
+              [index]: {
+                ...data[key][index],
+                [subKey]: value,
+              },
+            },
+          };
+        }
       }
-      if (name.startsWith("name.")) {
-        return {
-          ...prevData,
-          name: prevData.name.map((n, index) =>
-            index === 0 ? { ...n, family: value } : n
-          ),
-        };
-      }
-      return {
-        ...prevData,
-        [name]: value,
-      };
-    });
+      return data;
+    };
+
+    setPatientData((prevData) =>
+      updatePatientData(prevData, name.split("."), value)
+    );
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -156,23 +248,133 @@ const CreatePatient = () => {
                     onChange={handleChange}
                   />
                 </Form.Group>
-                <Form.Group className="mb-4" controlId="formPatientName">
+                <Form.Group className="mb-4" controlId="formFamilyName">
                   <Form.Label>Family Name</Form.Label>
                   <Form.Control
                     type="text"
-                    name="name.family"
+                    name="name.0.family"
                     placeholder="Enter family name"
                     value={patientData.name[0].family}
                     onChange={handleChange}
                   />
                 </Form.Group>
-                <Form.Group className="mb-4" controlId="formPatientIdentifier">
+                <Form.Group className="mb-4" controlId="formGivenName">
+                  <Form.Label>Given Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="name.0.given"
+                    placeholder="Enter given name"
+                    value={patientData.name[0].given.join(", ")}
+                    onChange={(e) =>
+                      setPatientData((prevData) => ({
+                        ...prevData,
+                        name: prevData.name.map((n, idx) =>
+                          idx === 0
+                            ? {
+                                ...n,
+                                given: e.target.value
+                                  .split(",")
+                                  .map((name) => name.trim()),
+                              }
+                            : n
+                        ),
+                      }))
+                    }
+                  />
+                </Form.Group>
+                <Form.Group className="mb-4" controlId="formGender">
+                  <Form.Label>Gender</Form.Label>
+                  <Form.Select
+                    name="gender"
+                    value={patientData.gender}
+                    onChange={handleChange}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </Form.Select>
+                </Form.Group>
+                <Form.Group className="mb-4" controlId="formBirthDate">
+                  <Form.Label>Birth Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="birthDate"
+                    value={patientData.birthDate}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-4" controlId="formIdentifierValue">
                   <Form.Label>Identifier Value</Form.Label>
                   <Form.Control
                     type="text"
-                    name="identifier.value"
+                    name="identifier.0.value"
                     placeholder="Enter identifier value"
                     value={patientData.identifier[0].value}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-4" controlId="formAddressLine">
+                  <Form.Label>Address Line</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="address.0.line"
+                    placeholder="Enter address line"
+                    value={patientData.address[0].line.join(", ")}
+                    onChange={(e) =>
+                      setPatientData((prevData) => ({
+                        ...prevData,
+                        address: prevData.address.map((addr, idx) =>
+                          idx === 0
+                            ? {
+                                ...addr,
+                                line: e.target.value
+                                  .split(",")
+                                  .map((line) => line.trim()),
+                              }
+                            : addr
+                        ),
+                      }))
+                    }
+                  />
+                </Form.Group>
+                <Form.Group className="mb-4" controlId="formCity">
+                  <Form.Label>City</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="address.0.city"
+                    placeholder="Enter city"
+                    value={patientData.address[0].city}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-4" controlId="formState">
+                  <Form.Label>State</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="address.0.state"
+                    placeholder="Enter state"
+                    value={patientData.address[0].state}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-4" controlId="formPostalCode">
+                  <Form.Label>Postal Code</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="address.0.postalCode"
+                    placeholder="Enter postal code"
+                    value={patientData.address[0].postalCode}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-4" controlId="formCountry">
+                  <Form.Label>Country</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="address.0.country"
+                    placeholder="Enter country"
+                    value={patientData.address[0].country}
                     onChange={handleChange}
                   />
                 </Form.Group>
