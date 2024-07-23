@@ -103,30 +103,40 @@ const ShowAllPatients = () => {
               <h1>All Patients</h1>
               {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
               {patients.length > 0 ? (
-                <Table striped bordered hover className="mt-4">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Gender</th>
-                      <th>Birth Date</th>
-                      <th>Address</th>
-                      <th>Observations</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {patients.map((patient, index) => (
-                      <tr key={index}>
-                        <td>{patient.id}</td>
-                        <td>{renderName(patient.name)}</td>
-                        <td>{patient.gender}</td>
-                        <td>{patient.birthDate}</td>
-                        <td>{renderAddress(patient.address)}</td>
-                        <td>{renderObservations(patient.observations)}</td>
+                <div style={{ overflowX: "auto" }}>
+                  <Table
+                    striped
+                    bordered
+                    hover
+                    className="mt-4"
+                    style={{ width: "100%" }}
+                  >
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Gender</th>
+                        <th>Birth Date</th>
+                        <th>Address</th>
+                        <th>Observations</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody>
+                      {patients.map((patient, index) => (
+                        <tr key={index}>
+                          <td>{patient.id}</td>
+                          <td>{renderName(patient.name)}</td>
+                          <td>{patient.gender}</td>
+                          <td>{patient.birthDate}</td>
+                          <td>{renderAddress(patient.address)}</td>
+                          <td style={{ whiteSpace: "pre-wrap" }}>
+                            {renderObservations(patient.observations)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </div>
               ) : (
                 <p>No patients found.</p>
               )}

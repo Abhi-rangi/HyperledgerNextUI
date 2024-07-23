@@ -8,6 +8,8 @@ import CreatePatient from "./CreatePatient";
 import SearchPatient from "./SearchPatient";
 import AppendData from "./AppendData";
 import ShowAllPatients from "./ShowAllPatients";
+import DeletePatient from "./DeletePatient";
+import AssetHistory from "./AssetHistory";
 
 const Dashboard = () => {
   const [enrollmentID, setEnrollmentID] = useState<string | null>(null);
@@ -21,7 +23,7 @@ const Dashboard = () => {
   const handleLogout = () => {
     Cookies.remove("org");
     Cookies.remove("enrollmentID");
-    router.push("/login");
+    router.push("/");
   };
 
   return (
@@ -45,18 +47,51 @@ const Dashboard = () => {
             defaultActiveKey="createPatient"
             id="dashboard-tabs"
             className="mb-3"
+            variant="tabs"
+            justify
+            style={{ borderBottom: "2px solid #99adf0" }}
           >
-            <Tab eventKey="createPatient" title="Create Patient">
+            <Tab
+              eventKey="createPatient"
+              title="Create Patient"
+              tabClassName="custom-tab"
+            >
               <CreatePatient />
             </Tab>
-            <Tab eventKey="searchPatient" title="Search Patient">
+            <Tab
+              eventKey="searchPatient"
+              title="Search Patient"
+              tabClassName="custom-tab"
+            >
               <SearchPatient />
             </Tab>
-            <Tab eventKey="appendData" title="Append Data">
+            <Tab
+              eventKey="appendData"
+              title="Append Data"
+              tabClassName="custom-tab"
+            >
               <AppendData />
             </Tab>
-            <Tab eventKey="showAllPatients" title="Show All Patients">
+            <Tab
+              eventKey="showAllPatients"
+              title="Show All Patients"
+              tabClassName="custom-tab"
+            >
               <ShowAllPatients />
+            </Tab>
+            <Tab
+              eventKey="deletePatient"
+              title="Delete Patient"
+              tabClassName="custom-tab"
+            >
+              <DeletePatient />
+            </Tab>
+            <Tab
+              eventKey="assetHistory"
+              title="Asset History"
+              tabClassName="custom-tab"
+            >
+              <AssetHistory />
             </Tab>
           </Tabs>
         </Card.Body>
