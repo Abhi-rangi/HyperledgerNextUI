@@ -1,15 +1,14 @@
 const { execSync } = require('child_process');
 const path = require('path');
+const paths = require('./paths.json')
 
-const absolutePathToFabricSamples = '/Users/abhishek/Documents/HyperLedgerFabric/fabric-samples';
+const absolutePathToFabricSamples = paths.absolutePathToFabricSamples;
 const absolutePathToTestNetwork = path.resolve(absolutePathToFabricSamples, 'test-network');
+const chaincodePath = paths.chaincodePath;
 
 const chaincodeName = 'basic2';
 const chaincodeVersion = '2.0';
-const chaincodePath = path.resolve(
-  absolutePathToFabricSamples,
-  "asset-transfer-basic/Healthcare-chaincode"
-);
+
 const channelName = 'mychannel';
 const ordererEndpoint = "localhost:7050";
 

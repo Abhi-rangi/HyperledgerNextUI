@@ -1,11 +1,14 @@
 const { Gateway, Wallets } = require("fabric-network");
 const fs = require("fs");
 const path = require("path");
+const paths = require('./paths.json');
+
+const absolutePathToTestNetwork = paths.absolutePathToTestNetwork;
 
 async function listChannelParticipants(channelName) {
   const ccpPath = path.resolve(
-    "/Users/abhishek/Documents/HyperLedgerFabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com",
-    "connection-org1.json"
+    absolutePathToTestNetwork,
+    "organizations/peerOrganizations/org1.example.com/connection-org1.json"
   ); // Adjust to your connection profile path
   const ccp = JSON.parse(fs.readFileSync(ccpPath, "utf8"));
 

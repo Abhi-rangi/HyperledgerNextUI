@@ -1,81 +1,90 @@
 const { Gateway, Wallets } = require("fabric-network");
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
+const readline = require("readline");
+const paths = require('./paths.json');
 
-// Manually set peer URLs if discovery does not provide them
-const peerUrls = {
-  Org1MSP: "http://localhost:7051",
-  Org2MSP: "http://localhost:9051",
-};
+const absolutePathToTestNetwork = paths.absolutePathToTestNetwork;
+const pathToFabricBinaries = paths.fabricBinPath;
 
-async function listChannelParticipants(channelName) {
-  const ccpPath = path.resolve(
-    "/Users/abhishek/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com",
-    "connection-org2.json"
-  );
-  const ccp = JSON.parse(fs.readFileSync(ccpPath, "utf8"));
+async function runCommand(command, options) {
+    return new Promise((resolve, reject) => {
+        const exec = require('child_process').exec;
+        const child = exec(command, options, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(stdout);
+            }
+        });
 
-  const walletPath = path.join(process.cwd(), "wallet");
-  const wallet = await Wallets.newFileSystemWallet(walletPath);
+        child.stdout.pipe(process.stdout);
+        child.stderr.pipe(process.stderr);
+    });
+}
 
-  const gateway = new Gateway();
-  await gateway.connect(ccp, {
-    wallet,
-    identity: "admin",
-    discovery: { enabled: true, asLocalhost: true },
-  });
-
+async function listParticipatingNodes(channelName) {
   try {
-    const network = await gateway.getNetwork(channelName);
-    const channel = network.getChannel();
-    const endorsers = channel.getEndorsers();
+      process.chdir(absolutePathToTestNetwork);
 
-    const peerStatuses = await Promise.all(
-      endorsers.map(async (peer) => {
-        const url = peerUrls[peer.mspid]; // Use manually configured URLs
-        if (!url) {
-          console.warn(`No URL configured for peer with MSPID: ${peer.mspid}`);
-          return { mspid: peer.mspid, status: "NO URL CONFIGURED" };
-        }
-        try {
-          const status = await checkPeerStatus(url);
-          return { mspid: peer.mspid, status };
-        } catch (error) {
-          console.error(`Failed to check status for peer ${url}: ${error}`);
-          return { mspid: peer.mspid, status: "ERROR" };
-        }
-      })
-    );
+      const envScriptPath = path.join(absolutePathToTestNetwork, 'env.sh');
+      const envScriptContent = `
+      #!/bin/bash
+      export PATH=${pathToFabricBinaries}:$PATH
+      export FABRIC_CFG_PATH=$PWD/../config/
+      export CORE_PEER_TLS_ENABLED=true
+      export CORE_PEER_LOCALMSPID=Org1MSP
+      export CORE_PEER_TLS_ROOTCERT_FILE=$PWD/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+      export CORE_PEER_MSPCONFIGPATH=$PWD/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+      export CORE_PEER_ADDRESS=localhost:7051
+      peer channel fetch config config_block.pb -o localhost:7050 -c ${channelName} --tls --cafile $PWD/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+      `;
 
-    return peerStatuses;
-  } finally {
-    gateway.disconnect();
+      fs.writeFileSync(envScriptPath, envScriptContent);
+      fs.chmodSync(envScriptPath, '755');
+
+      const options = {
+          env: {
+              ...process.env,
+              PATH: `${pathToFabricBinaries}:${process.env.PATH}`
+          }
+      };
+
+      console.log(`Running temporary script to fetch configuration block for channel ${channelName}...`);
+      await runCommand(`bash ${envScriptPath}`, options);
+      console.log(`Fetched the latest configuration block for channel ${channelName}.`);
+
+      console.log('Converting the configuration block to JSON...');
+      await runCommand(`${pathToFabricBinaries}/configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json`, options);
+      console.log('Converted the configuration block to JSON.');
+
+      console.log('Extracting the channel configuration...');
+      await runCommand(`jq .data.data[0].payload.data.config config_block.json > config.json`, options);
+      console.log('Extracted the channel configuration.');
+
+      console.log('Listing the organizations in the channel configuration...');
+      const output = await runCommand(`jq -r '.channel_group.groups.Application.groups' config.json`, options);
+      console.log('Organizations in the channel:');
+      console.log(output);
+
+      fs.unlinkSync(envScriptPath);
+  } catch (error) {
+      console.error(`Failed to list participating nodes: ${error}`);
   }
 }
 
-async function checkPeerStatus(peerUrl) {
-  return new Promise((resolve, reject) => {
-    const url = new URL("/health", peerUrl); // Adjust if your health check endpoint differs
-    const req = http.get(url.href, (res) => {
-      if (res.statusCode === 200) {
-        resolve("UP");
-      } else {
-        resolve("DOWN");
-      }
-      res.resume();
-    });
+// Ask user for channel name and call the function
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 
-    req.on("error", (e) => {
-      console.error(`Error checking peer status for ${url.href}: ${e.message}`);
-      resolve("DOWN");
+rl.question('Please enter the channel name: ', (channelName) => {
+    listParticipatingNodes(channelName).then(() => {
+        rl.close();
+    }).catch((error) => {
+        console.error(`Error: ${error}`);
+        rl.close();
     });
-  });
-}
+});
 
-// Usage example
-listChannelParticipants("channel1")
-  .then((participants) => console.log("Participants:", participants))
-  .catch((error) =>
-    console.error("Failed to list channel participants:", error)
-  );

@@ -1,13 +1,14 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const paths = require('./paths.json');
 
-const absolutePathToTestNetwork = '/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/test-network';
+const absolutePathToTestNetwork = paths.absolutePathToTestNetwork;
 const channelName = 'fd';
 const org3MSP = 'Org3MSP';
 const ordererEndpoint = 'orderer.example.com:7050';
-const fabricBinPath = '/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/bin';
-const fabricCfgPath = '/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/config';
+const fabricBinPath = paths.fabricBinPath;
+const fabricCfgPath = paths.fabricCfgPath;
 
 function setEnvVariables(org) {
     const orgMSP = org === 'Org1' ? 'Org1MSP' : (org === 'Org2' ? 'Org2MSP' : 'Org3MSP');

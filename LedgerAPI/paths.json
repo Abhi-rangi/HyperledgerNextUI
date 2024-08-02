@@ -1,0 +1,9 @@
+{
+    "absolutePathToFabricSamples": "/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples",
+    "absolutePathToTestNetwork": "/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/test-network",
+    "fabricBinPath": "/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/bin",
+    "fabricCfgPath": "/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/config",
+    "chaincodePath": "/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/Healthcare-chaincode_V2",
+    "cafilePath": "/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/test-network/organizations/ordererOrganizations/example.com/msp/tlscacerts/tlsca.example.com-cert.pem",
+    "configPath": "/Users/pouriatayebi/go/src/github.com/pouriata2000/fabric-samples/test-network/configtx/configtx.yaml"
+  }

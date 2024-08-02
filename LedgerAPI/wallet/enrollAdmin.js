@@ -8,11 +8,12 @@ const path = require("path");
 
 const yaml = require("js-yaml");
 
+const paths = require('../paths.json');
+
 async function main() {
   const ccpPath = path.resolve(
-    "/Users/abhishek/Documents/HyperLedgerFabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com",
-
-    "connection-org1.yaml"
+    paths.absolutePathToTestNetwork,
+    "organizations/peerOrganizations/org1.example.com/connection-org1.yaml"
   );
 
   const ccp = yaml.load(fs.readFileSync(ccpPath, "utf8"));
@@ -35,7 +36,7 @@ async function main() {
 
   // Create a new wallet : Note that wallet is for managing identities.
 
-  const walletPath = path.join(process.cwd(), "wallet");
+  const walletPath = path.join(process.cwd());
 
   const wallet = await Wallets.newFileSystemWallet(walletPath);
 

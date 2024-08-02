@@ -5,12 +5,16 @@ const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
 const cors = require("cors");
+const paths = require('./paths.json');
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-const ccpPathBase =
-  "/Users/abhishek/Documents/HyperLedgerFabric/fabric-samples/test-network/organizations/peerOrganizations";
+const absolutePathToTestNetwork = paths.absolutePathToTestNetwork;
+const ccpPathBase = path.resolve(
+  absolutePathToTestNetwork,
+  "organizations/peerOrganizations"
+);
 
 // Function to connect to gateway
 const connectToGateway = async (org, identityName) => {
@@ -123,7 +127,7 @@ app.post("/create-patient", async (req, res) => {
       return;
     }
     const network = await gateway.getNetwork("mychannel");
-    const contract = network.getContract("basic");
+    const contract = network.getContract("basic2");
 
     await contract.submitTransaction(
       "CreatePatient",
@@ -151,7 +155,7 @@ app.post("/append-observation", async (req, res) => {
       return;
     }
     const network = await gateway.getNetwork("mychannel");
-    const contract = network.getContract("basic");
+    const contract = network.getContract("basic2");
 
     await contract.submitTransaction(
       "AppendObservation",
@@ -180,7 +184,7 @@ app.get("/get-patient/:id", async (req, res) => {
       return;
     }
     const network = await gateway.getNetwork("mychannel");
-    const contract = network.getContract("basic");
+    const contract = network.getContract("basic2");
 
     const result = await contract.evaluateTransaction("ReadPatient", id);
     await gateway.disconnect();
@@ -203,7 +207,7 @@ app.get("/get-all-patients", async (req, res) => {
       return;
     }
     const network = await gateway.getNetwork("mychannel");
-    const contract = network.getContract("basic");
+    const contract = network.getContract("basic2");
 const result1 = await contract.evaluateTransaction("getAllKeys");
 console.log(`Transaction has been evaluated, result is: ${result1.toString()}`);
     const result = await contract.evaluateTransaction("GetAllPatients");
@@ -226,7 +230,7 @@ app.delete("/delete-patient", async (req, res) => {
             return;
         }
         const network = await gateway.getNetwork("mychannel");
-        const contract = network.getContract("basic");
+        const contract = network.getContract("basic2");
 
         // Submit transaction to delete a patient record
         await contract.submitTransaction("DeletePatient", patientId);
@@ -249,7 +253,7 @@ app.get("/asset-history/:assetId", async (req, res) => {
       return;
     }
     const network = await gateway.getNetwork("mychannel");
-    const contract = network.getContract("basic");
+    const contract = network.getContract("basic2");
 
     const history = await contract.evaluateTransaction(
       "GetAssetHistory",
