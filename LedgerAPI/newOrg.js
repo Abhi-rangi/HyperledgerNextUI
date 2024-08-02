@@ -2,6 +2,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const paths = require('./paths.json');
+const readline = require('readline');
 
 const executeCommand = (command, workingDirectory) => {
   return new Promise((resolve, reject) => {
@@ -18,8 +19,21 @@ const executeCommand = (command, workingDirectory) => {
   });
 }
 
+const askQuestion = (query) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise(resolve => rl.question(query, answer => {
+    rl.close();
+    resolve(answer);
+  }));
+}
+
 const runAddOrg3 = async () => {
   try {
+    const channelName = await askQuestion("Enter the channel name Org3 should join: ");
+
     const baseDir = paths.absolutePathToTestNetwork;
     const addOrg3Dir = path.resolve(baseDir, 'addOrg3');
     const testNetworkDir = baseDir;
@@ -29,6 +43,7 @@ const runAddOrg3 = async () => {
     const org1AdminMSP = path.resolve(testNetworkDir, 'organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp'); // MSP directory path
     const org2AdminMSP = path.resolve(testNetworkDir, 'organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp'); // MSP directory path
     const org3AdminMSP = path.resolve(testNetworkDir, 'organizations/peerOrganizations/org3.example.com/users/Admin@org3.example.com/msp'); // MSP directory path
+    const ordererMSP = path.resolve(testNetworkDir, 'organizations/ordererOrganizations/example.com/users/Admin@example.com/msp');
 
     // Ensure org3-crypto.yaml is present
     const org3CryptoYamlPath = path.join(addOrg3Dir, 'org3-crypto.yaml');
@@ -66,7 +81,7 @@ const runAddOrg3 = async () => {
       export CORE_PEER_TLS_ROOTCERT_FILE=${testNetworkDir}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt &&
       export CORE_PEER_MSPCONFIGPATH=${org1AdminMSP} &&
       export CORE_PEER_ADDRESS=localhost:7051 &&
-      peer channel fetch config channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel --tls --cafile "${testNetworkDir}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+      peer channel fetch config channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com -c ${channelName} --tls --cafile "${testNetworkDir}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
     `, testNetworkDir);
     console.log('Configuration fetched successfully.');
 
@@ -86,9 +101,9 @@ const runAddOrg3 = async () => {
       jq -s '.[0] * {"channel_group":{"groups":{"Application":{"groups": {"Org3MSP":.[1]}}}}}' channel-artifacts/config.json organizations/peerOrganizations/org3.example.com/org3.json > channel-artifacts/modified_config.json &&
       configtxlator proto_encode --input channel-artifacts/config.json --type common.Config --output channel-artifacts/config.pb &&
       configtxlator proto_encode --input channel-artifacts/modified_config.json --type common.Config --output channel-artifacts/modified_config.pb &&
-      configtxlator compute_update --channel_id mychannel --original channel-artifacts/config.pb --updated channel-artifacts/modified_config.pb --output channel-artifacts/org3_update.pb &&
+      configtxlator compute_update --channel_id ${channelName} --original channel-artifacts/config.pb --updated channel-artifacts/modified_config.pb --output channel-artifacts/org3_update.pb &&
       configtxlator proto_decode --input channel-artifacts/org3_update.pb --type common.ConfigUpdate --output channel-artifacts/org3_update.json &&
-      echo '{"payload":{"header":{"channel_header":{"channel_id":"mychannel", "type":2}},"data":{"config_update":'$(cat channel-artifacts/org3_update.json)'}}}' | jq . > channel-artifacts/org3_update_in_envelope.json &&
+      echo '{"payload":{"header":{"channel_header":{"channel_id":"${channelName}", "type":2}},"data":{"config_update":'$(cat channel-artifacts/org3_update.json)'}}}' | jq . > channel-artifacts/org3_update_in_envelope.json &&
       configtxlator proto_encode --input channel-artifacts/org3_update_in_envelope.json --type common.Envelope --output channel-artifacts/org3_update_in_envelope.pb
     `, testNetworkDir);
     console.log('Org3 crypto material added successfully.');
@@ -127,8 +142,36 @@ const runAddOrg3 = async () => {
     `, testNetworkDir);
     console.log('Config update signed by Org2 Admin.');
 
+    // Sign the config update by Orderer Admin
+    console.log('Signing the config update by Orderer Admin...');
+    await executeCommand(`
+      export PATH=${binDir}:$PATH &&
+      export FABRIC_CFG_PATH=${configDir} &&
+      export CORE_PEER_TLS_ENABLED=true &&
+      export CORE_PEER_LOCALMSPID=OrdererMSP &&
+      export CORE_PEER_TLS_ROOTCERT_FILE=${testNetworkDir}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt &&
+      export CORE_PEER_MSPCONFIGPATH=${ordererMSP} &&
+      export CORE_PEER_ADDRESS=localhost:7050 &&
+      peer channel signconfigtx -f channel-artifacts/org3_update_in_envelope.pb
+    `, testNetworkDir);
+    console.log('Config update signed by Orderer Admin.');
 
-    // Submit the config update
+    // Sign the config update by ORG3 Admin
+    console.log('Signing the config update by org3 Admin...');
+    await executeCommand(`
+    export PATH=${binDir}:$PATH &&
+    export FABRIC_CFG_PATH=${configDir} &&
+    export CORE_PEER_TLS_ENABLED=true &&
+    export CORE_PEER_LOCALMSPID=Org3MSP &&
+    export CORE_PEER_TLS_ROOTCERT_FILE=${testNetworkDir}/organizations/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt &&
+    export CORE_PEER_MSPCONFIGPATH=${org3AdminMSP} &&
+    export CORE_PEER_ADDRESS=localhost:11051 &&
+    peer channel signconfigtx -f channel-artifacts/org3_update_in_envelope.pb
+    `, testNetworkDir);
+    console.log('Config update signed by org3 Admin.');
+
+
+    // Step 10: Submit the config update
     console.log('Submitting the config update...');
     await executeCommand(`
       export PATH=${binDir}:$PATH &&
@@ -138,11 +181,24 @@ const runAddOrg3 = async () => {
       export CORE_PEER_TLS_ROOTCERT_FILE=${testNetworkDir}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt &&
       export CORE_PEER_MSPCONFIGPATH=${org2AdminMSP} &&
       export CORE_PEER_ADDRESS=localhost:9051 &&
-      peer channel update -f channel-artifacts/org3_update_in_envelope.pb -c mychannel -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${testNetworkDir}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+      peer channel update -f channel-artifacts/org3_update_in_envelope.pb -c ${channelName} -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${testNetworkDir}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
     `, testNetworkDir);
     console.log('Config update submitted successfully.');
 
-    // Step 11: Join Org3 to the channel
+    // Step 11: Fetch the block using Org1 credentials and have Org3 join the channel
+    console.log('Fetching the block using Org1 credentials...');
+    await executeCommand(`
+      export PATH=${binDir}:$PATH &&
+      export FABRIC_CFG_PATH=${configDir} &&
+      export CORE_PEER_TLS_ENABLED=true &&
+      export CORE_PEER_LOCALMSPID=Org1MSP &&
+      export CORE_PEER_TLS_ROOTCERT_FILE=${testNetworkDir}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt &&
+      export CORE_PEER_MSPCONFIGPATH=${org1AdminMSP} &&
+      export CORE_PEER_ADDRESS=localhost:7051 &&
+      peer channel fetch 0 channel-artifacts/${channelName}.block -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com -c ${channelName} --tls --cafile "${testNetworkDir}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem"
+    `, testNetworkDir);
+    console.log('Block fetched successfully.');
+
     console.log('Joining Org3 to the channel...');
     await executeCommand(`
       export PATH=${binDir}:$PATH &&
@@ -150,10 +206,9 @@ const runAddOrg3 = async () => {
       export CORE_PEER_TLS_ENABLED=true &&
       export CORE_PEER_LOCALMSPID=Org3MSP &&
       export CORE_PEER_TLS_ROOTCERT_FILE=${testNetworkDir}/organizations/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt &&
-      export CORE_PEER_MSPCONFIGPATH=${testNetworkDir}/organizations/peerOrganizations/org3.example.com/users/Admin@org3.example.com/msp &&
+      export CORE_PEER_MSPCONFIGPATH=${org3AdminMSP} &&
       export CORE_PEER_ADDRESS=localhost:11051 &&
-      peer channel fetch 0 channel-artifacts/mychannel.block -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel --tls --cafile "${testNetworkDir}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" &&
-      peer channel join -b channel-artifacts/mychannel.block
+      peer channel join -b channel-artifacts/${channelName}.block
     `, testNetworkDir);
     console.log('Org3 joined to the channel successfully.');
 
