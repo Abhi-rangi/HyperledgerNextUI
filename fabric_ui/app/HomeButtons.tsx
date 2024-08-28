@@ -33,6 +33,11 @@ const HomeButtons = () => {
               Login
             </Button>
           </Link>
+          <Link href="/adminRegister" passHref>
+            <Button variant="outline-primary" size="lg" className="ms-2">
+              Admin Register
+            </Button>
+          </Link>
         </Col>
       </Row>
     </Container>

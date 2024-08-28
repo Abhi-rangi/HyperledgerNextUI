@@ -6,7 +6,7 @@ const absolutePathToFabricSamples = paths.absolutePathToFabricSamples;
 const absolutePathToTestNetwork = path.resolve(absolutePathToFabricSamples, 'test-network');
 const chaincodePath = paths.chaincodePath;
 
-const chaincodeName = 'basic2';
+const chaincodeName = 's';
 const chaincodeVersion = '2.0';
 
 const channelName = 'mychannel';

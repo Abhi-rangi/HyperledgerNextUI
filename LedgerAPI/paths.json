@@ -1,9 +1,10 @@
-{
-    "absolutePathToFabricSamples": "//home/cslmach/go/src/github.com/pouriata2000/fabric-samples",
-    "absolutePathToTestNetwork": "/home/cslmach/go/src/github.com/pouriata2000/fabric-samples/test-network",
-    "fabricBinPath": "/home/cslmach/go/src/github.com/pouriata2000/fabric-samples/bin",
-    "fabricCfgPath": "/home/cslmach/go/src/github.com/pouriata2000/fabric-samples/config",
+  {
+    "absolutePathToFabricSamples": "/home/cslmach/go/src/github.com/multihost_2org_hyperledger",
+    "absolutePathToTestNetwork": "/home/cslmach/go/src/github.com/multihost_2org_hyperledger/crypto-config",
+    "fabricBinPath": "/home/cslmach/go/src/github.com/multihost_2org_hyperledger/bin",
+    "fabricCfgPath": "/home/cslmach/go/src/github.com/multihost_2org_hyperledger/config",
     "chaincodePath": "/home/cslmach/go/src/github.com/pouriata2000/fabric-samples/Healthcare-chaincode_V2",
-    "cafilePath": "/home/cslmach/go/src/github.com/pouriata2000/fabric-samples/test-network/organizations/ordererOrganizations/example.com/msp/tlscacerts/tlsca.example.com-cert.pem",
-    "configPath": "/home/cslmach/go/src/github.com/pouriata2000/fabric-samples/test-network/configtx/configtx.yaml"
+    "cafilePath": "/home/cslmach/go/src/github.com/multihost_2org_hyperledger/crypto-config/ordererOrganizations/example.com/msp/tlscacerts/tlsca.example.com-cert.pem",
+    "configPath": "/home/cslmach/go/src/github.com/multihost_2org_hyperledger/config/configtx.yaml"
   }
+

@@ -50,7 +50,7 @@ async function listChannels(org) {
         // Clean up the env.sh script after the command execution
         fs.unlinkSync(envScriptPath);
     } catch (error) {
-        console.error(`Failed to list channels for Org${org}: ${error}`);
+        console.error(`Failed to list channels for Org${org}: This organization does not exist`);
     }
 }
 
